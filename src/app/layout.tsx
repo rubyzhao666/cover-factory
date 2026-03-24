@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Noto_Sans_SC, Noto_Serif_SC, ZCOOL_KuaiLe, Ma_Shan_Zheng, Inter } from 'next/font/google'
 import { Header } from '@/components/header'
+import { AuthProvider } from '@/lib/auth-context'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import './globals.css'
 
@@ -57,13 +58,15 @@ export default function RootLayout({
           fontFamily: '"Noto Sans SC", "Inter", system-ui, sans-serif',
         }}
       >
-        <TooltipProvider>
-          <Header />
-          <main className="min-h-screen">{children}</main>
-          <footer className="border-t border-gray-100 py-8 text-center text-xs text-gray-400">
-            <p>封面工厂 © 2025 — AI 驱动的多平台封面生成器</p>
-          </footer>
-        </TooltipProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Header />
+            <main className="min-h-screen">{children}</main>
+            <footer className="border-t border-gray-100 py-8 text-center text-xs text-gray-400">
+              <p>封面工厂 © 2025 — AI 驱动的多平台封面生成器</p>
+            </footer>
+          </TooltipProvider>
+        </AuthProvider>
       </body>
     </html>
   )

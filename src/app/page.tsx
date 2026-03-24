@@ -156,7 +156,7 @@ export default function Home() {
             现在就开始，让封面成为你的竞争力
           </h2>
           <p className="mb-8 text-orange-100">
-            免费体验，无需注册，AI 帮你打造每一张封面
+            新用户注册送 2 积分，立即体验 AI 封面生成
           </p>
           <Link href="/generate">
             <Button size="lg" className="gap-2 rounded-xl bg-white px-8 text-base font-semibold text-orange-600 shadow-xl hover:bg-orange-50 transition-all">

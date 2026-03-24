@@ -92,3 +92,43 @@ export interface UploadedImage {
   file: File
   preview: string // base64 data URL
 }
+
+// ========== 支付相关类型 ==========
+
+export interface PricingPlan {
+  id: string
+  name: string
+  price: number // 价格（分）
+  credits: number
+  original_price: number // 原价（分）
+  duration_days: number
+  is_popular: boolean
+  sort_order: number
+}
+
+export interface PaymentOrder {
+  id: string
+  user_id: string
+  plan_id: string | null
+  amount: number // 支付金额（分）
+  credits: number // 获得的积分
+  status: 'pending' | 'paid' | 'failed' | 'expired'
+  payment_method: 'wechat' | 'alipay' | null
+  trade_no: string | null
+  created_at: string
+  paid_at: string | null
+}
+
+export interface InviteStats {
+  inviteCode: string
+  totalInvited: number
+  paidInvited: number
+  totalRewardCredits: number
+  invitees: Array<{
+    id: string
+    nickname: string | null
+    email: string
+    created_at: string
+    has_paid: boolean
+  }>
+}
