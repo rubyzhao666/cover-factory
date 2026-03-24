@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Sparkles, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,10 +11,16 @@ import { PlatformSelector } from '@/components/platform-selector'
 import { ImageUploader } from '@/components/image-uploader'
 import { StyleSelector } from '@/components/style-selector'
 import { CoverPreview } from '@/components/cover-preview'
+import { PaywallDialog } from '@/components/paywall-dialog'
+import { useAuth } from '@/lib/auth-context'
+import { createClient } from '@/lib/supabase/client'
+import { checkCoverQuotaLocal, consumeCoverQuotaLocal, getUserCredits } from '@/lib/quota'
 import { fontStyles } from '@/lib/constants'
 import type { UploadedImage } from '@/lib/types'
 
 export default function GeneratePage() {
+  const { user, loading: authLoading } = useAuth()
+
   // 平台与比例
   const [platform, setPlatform] = useState<string | null>(null)
   const [ratio, setRatio] = useState<string | null>(null)
@@ -39,6 +45,25 @@ export default function GeneratePage() {
   const [error, setError] = useState<string | null>(null)
   const [history, setHistory] = useState<string[]>([])
 
+  // 付费弹窗
+  const [showPaywall, setShowPaywall] = useState(false)
+
+  // 积分余额
+  const [credits, setCredits] = useState<number | null>(null)
+
+  useEffect(() => {
+    async function fetchCredits() {
+      if (!user) {
+        setCredits(null)
+        return
+      }
+      const supabase = createClient()
+      const balance = await getUserCredits(supabase, user.id)
+      setCredits(balance)
+    }
+    if (!authLoading) fetchCredits()
+  }, [user, authLoading])
+
   // 生成封面
   const handleGenerate = useCallback(async () => {
     if (!selectedStyle) {
@@ -50,12 +75,29 @@ export default function GeneratePage() {
       return
     }
 
+    // 配额检查
+    if (user) {
+      // 已登录用户：检查 Supabase 积分
+      const supabase = createClient()
+      const currentCredits = await getUserCredits(supabase, user.id)
+      if (currentCredits < 1) {
+        setShowPaywall(true)
+        return
+      }
+    } else {
+      // 未登录用户：检查 localStorage 配额
+      const quota = checkCoverQuotaLocal()
+      if (!quota.canGenerate) {
+        setShowPaywall(true)
+        return
+      }
+    }
+
     setError(null)
     setIsGenerating(true)
     setGeneratedImage(null)
 
     try {
-      // 将上传的图片转为 base64
       let imageUrl: string | undefined
       if (subjectImages.length > 0) {
         imageUrl = await fileToBase64(subjectImages[0].file)
@@ -83,17 +125,32 @@ export default function GeneratePage() {
         setGeneratedImage(data.imageUrl)
         setHistory((prev) => [data.imageUrl, ...prev.slice(0, 5)])
         if (data.warning) setError(data.warning)
+
+        // 扣减配额
+        if (user) {
+          // 已登录：以服务端返回余额为准，避免并发下前端显示错误
+          if (typeof data.remainingCredits === 'number') {
+            setCredits(Math.max(0, data.remainingCredits))
+          } else {
+            setCredits((prev) => (prev !== null ? Math.max(0, prev - 1) : null))
+          }
+        } else {
+          consumeCoverQuotaLocal()
+        }
       } else {
-        setError(data.error || '生成失败，请重试')
+        if (data.noCredits) {
+          setShowPaywall(true)
+        } else {
+          setError(data.error || '生成失败，请重试')
+        }
       }
     } catch (err) {
       setError(`网络错误: ${err instanceof Error ? err.message : '请检查网络连接'}`)
     } finally {
       setIsGenerating(false)
     }
-  }, [selectedStyle, ratio, platform, title, subtitle, font, decoration, notes, subjectImages])
+  }, [selectedStyle, ratio, platform, title, subtitle, font, decoration, notes, subjectImages, user])
 
-  // 文件转 base64
   async function fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
@@ -244,6 +301,9 @@ export default function GeneratePage() {
               <>
                 <Sparkles className="h-5 w-5" />
                 生成封面
+                {user && credits !== null && (
+                  <span className="ml-1 text-xs opacity-80">（💎 {credits}）</span>
+                )}
               </>
             )}
           </Button>
@@ -301,6 +361,13 @@ export default function GeneratePage() {
           </div>
         </div>
       </div>
+
+      {/* 付费引导弹窗 */}
+      <PaywallDialog
+        open={showPaywall}
+        onOpenChange={setShowPaywall}
+        type="cover"
+      />
     </div>
   )
 }

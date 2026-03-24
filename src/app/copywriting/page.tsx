@@ -1,15 +1,21 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { PenTool, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { PaywallDialog } from '@/components/paywall-dialog'
+import { useAuth } from '@/lib/auth-context'
+import { createClient } from '@/lib/supabase/client'
+import { checkCopywritingQuotaLocal, consumeCopywritingQuotaLocal, getUserCredits } from '@/lib/quota'
 import { platforms, copywritingTypes } from '@/lib/constants'
 import { CopywritingResult } from '@/components/copywriting-result'
 
 export default function CopywritingPage() {
+  const { user, loading: authLoading } = useAuth()
+
   const [platform, setPlatform] = useState('xiaohongshu')
   const [topic, setTopic] = useState('')
   const [type, setType] = useState('viral-title')
@@ -20,10 +26,44 @@ export default function CopywritingPage() {
   const [error, setError] = useState<string | null>(null)
   const [history, setHistory] = useState<{ topic: string; content: string }[]>([])
 
+  // 付费弹窗
+  const [showPaywall, setShowPaywall] = useState(false)
+  // 积分余额
+  const [credits, setCredits] = useState<number | null>(null)
+
+  useEffect(() => {
+    async function fetchCredits() {
+      if (!user) {
+        setCredits(null)
+        return
+      }
+      const supabase = createClient()
+      const balance = await getUserCredits(supabase, user.id)
+      setCredits(balance)
+    }
+    if (!authLoading) fetchCredits()
+  }, [user, authLoading])
+
   const handleGenerate = useCallback(async () => {
     if (!topic.trim()) {
       setError('请输入主题或关键词')
       return
+    }
+
+    // 配额检查
+    if (user) {
+      const supabase = createClient()
+      const currentCredits = await getUserCredits(supabase, user.id)
+      if (currentCredits < 1) {
+        setShowPaywall(true)
+        return
+      }
+    } else {
+      const quota = checkCopywritingQuotaLocal()
+      if (!quota.canGenerate) {
+        setShowPaywall(true)
+        return
+      }
     }
 
     setError(null)
@@ -47,15 +87,30 @@ export default function CopywritingPage() {
       if (data.success && data.content) {
         setContent(data.content)
         setHistory((prev) => [{ topic, content: data.content }, ...prev.slice(0, 9)])
+
+        // 扣减配额
+        if (user) {
+          if (typeof data.remainingCredits === 'number') {
+            setCredits(Math.max(0, data.remainingCredits))
+          } else {
+            setCredits((prev) => (prev !== null ? Math.max(0, prev - 1) : null))
+          }
+        } else {
+          consumeCopywritingQuotaLocal()
+        }
       } else {
-        setError(data.error || '生成失败，请重试')
+        if (data.noCredits) {
+          setShowPaywall(true)
+        } else {
+          setError(data.error || '生成失败，请重试')
+        }
       }
     } catch (err) {
       setError(`网络错误: ${err instanceof Error ? err.message : '请检查网络连接'}`)
     } finally {
       setIsGenerating(false)
     }
-  }, [topic, platform, type, notes])
+  }, [topic, platform, type, notes, user])
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
@@ -155,6 +210,9 @@ export default function CopywritingPage() {
               <>
                 <PenTool className="h-5 w-5" />
                 生成文案
+                {user && credits !== null && (
+                  <span className="ml-1 text-xs opacity-80">（💎 {credits}）</span>
+                )}
               </>
             )}
           </Button>
@@ -193,6 +251,13 @@ export default function CopywritingPage() {
           )}
         </div>
       </div>
+
+      {/* 付费引导弹窗 */}
+      <PaywallDialog
+        open={showPaywall}
+        onOpenChange={setShowPaywall}
+        type="copywriting"
+      />
     </div>
   )
 }
