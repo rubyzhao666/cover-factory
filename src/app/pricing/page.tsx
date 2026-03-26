@@ -5,6 +5,13 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Check, Sparkles, Zap, Crown } from 'lucide-react'
 import type { PricingPlan } from '@/lib/types'
 
@@ -47,6 +54,8 @@ function formatPrice(cents: number): string {
 
 export default function PricingPage() {
   const [plans, setPlans] = useState<PricingPlan[]>(defaultPlans)
+  const [paymentOpen, setPaymentOpen] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<PricingPlan | null>(null)
 
   // 从 Supabase 加载套餐
   useEffect(() => {
@@ -70,6 +79,11 @@ export default function PricingPage() {
 
   const planIcons = [Zap, Sparkles, Crown]
 
+  const openWechatPayment = (plan: PricingPlan) => {
+    setSelectedPlan(plan)
+    setPaymentOpen(true)
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       {/* 页头 */}
@@ -81,7 +95,7 @@ export default function PricingPage() {
           每次生成消耗 1 积分，积分永久有效
         </p>
         <p className="mt-2 text-sm text-orange-600">
-          支付功能内测中，暂未开放购买
+          支持微信收款码人工充值，支付后联系客服手动到账
         </p>
       </div>
 
@@ -159,19 +173,19 @@ export default function PricingPage() {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Check className="h-4 w-4 text-orange-500" />
-                  <span>支付功能内测中</span>
+                  <span>微信收款码人工充值</span>
                 </div>
               </div>
 
               <Button
-                disabled
+                onClick={() => openWechatPayment(plan)}
                 className={`w-full rounded-xl py-4 text-base font-semibold transition-all ${
                   plan.is_popular
                     ? 'bg-gradient-to-r from-orange-500 to-pink-500 shadow-lg shadow-orange-200 hover:shadow-xl'
                     : 'bg-gray-900 hover:bg-gray-800'
                 }`}
               >
-                敬请期待
+                微信充值
               </Button>
             </div>
           )
@@ -187,6 +201,46 @@ export default function PricingPage() {
           </Link>
         </p>
       </div>
+
+      <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">微信收款码充值</DialogTitle>
+            <DialogDescription className="text-center">
+              选择套餐后扫码支付，支付完成请联系客服处理积分到账
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 text-center">
+            <div className="rounded-lg bg-orange-50 px-3 py-2 text-sm text-orange-700">
+              当前套餐：{selectedPlan ? `${selectedPlan.name}（¥${formatPrice(selectedPlan.price)}）` : '未选择'}
+            </div>
+
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/ruby-wechat-qr.png"
+              alt="微信收款码"
+              className="mx-auto h-52 w-52 rounded-xl border border-gray-200 object-cover"
+            />
+
+            <p className="text-xs text-gray-500">
+              请备注：封面工厂 + 邮箱/昵称 + 套餐名
+            </p>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={async () => {
+                if (!selectedPlan) return
+                const text = `封面工厂充值：${selectedPlan.name}（¥${formatPrice(selectedPlan.price)}）`
+                await navigator.clipboard.writeText(text)
+              }}
+            >
+              复制付款备注
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
