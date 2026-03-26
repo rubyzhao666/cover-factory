@@ -20,9 +20,10 @@ function generateSign(params: Record<string, string>, secret: string): string {
     .map((key) => `${key}=${params[key]}`)
     .join('&')
 
-  // 简化的签名生成，实际需要用 MD5(signStr + secret) 或 HmacSHA256
-  // 这里先返回空字符串，等 Ruby 配置好密钥后使用 crypto 模块
-  return ''
+  // 预留签名占位：当前支付接口仍在联调阶段
+  // 这里先返回拼接串，后续可替换为真实 MD5 / HmacSHA256 算法
+  if (!secret) return ''
+  return `${signStr}&key=${secret}`
 }
 
 export async function POST(request: NextRequest) {

@@ -7,7 +7,7 @@ import { consumeCoverQuotaServer, refundCoverQuotaServer } from '@/lib/quota'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { style, platform, ratio, title, subtitle, font, decoration, notes, imageUrl } = body
+    const { style, platform, ratio, title, subtitle, decoration, notes, imageUrl } = body
 
     // 参数校验
     if (!style) {

@@ -1,7 +1,14 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { Client } = require('pg');
 
+const connectionString = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
+if (!connectionString) {
+  console.error('❌ 缺少数据库连接串：请设置 SUPABASE_DB_URL 或 DATABASE_URL');
+  process.exit(1);
+}
+
 const client = new Client({
-  connectionString: 'postgresql://postgres:QweAgent-2026@db.ijriapukqjoqqiuukatk.supabase.co:5432/postgres'
+  connectionString
 });
 
 async function setup() {
@@ -10,17 +17,17 @@ async function setup() {
 
   // 1. 清理
   console.log('\n🔄 清理旧数据...');
-  try { await client.query('DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users CASCADE'); } catch(e) { console.log('  skip: on_auth_user_created'); }
-  try { await client.query('DROP TRIGGER IF EXISTS on_auth_user_created_credits ON auth.users CASCADE'); } catch(e) { console.log('  skip: on_auth_user_created_credits'); }
-  try { await client.query('DROP TRIGGER IF EXISTS profiles_updated_at ON public.profiles CASCADE'); } catch(e) { console.log('  skip: profiles_updated_at'); }
-  try { await client.query('DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE'); } catch(e) { console.log('  skip: handle_new_user'); }
-  try { await client.query('DROP FUNCTION IF EXISTS public.handle_new_user_credits() CASCADE'); } catch(e) { console.log('  skip: handle_new_user_credits'); }
-  try { await client.query('DROP FUNCTION IF EXISTS public.generate_invite_code() CASCADE'); } catch(e) { console.log('  skip: generate_invite_code'); }
-  try { await client.query('DROP FUNCTION IF EXISTS public.update_updated_at() CASCADE'); } catch(e) { console.log('  skip: update_updated_at'); }
-  try { await client.query('DROP TABLE IF EXISTS public.payment_orders CASCADE'); } catch(e) { console.log('  skip: payment_orders'); }
-  try { await client.query('DROP TABLE IF EXISTS public.credit_transactions CASCADE'); } catch(e) { console.log('  skip: credit_transactions'); }
-  try { await client.query('DROP TABLE IF EXISTS public.pricing_plans CASCADE'); } catch(e) { console.log('  skip: pricing_plans'); }
-  try { await client.query('DROP TABLE IF EXISTS public.profiles CASCADE'); } catch(e) { console.log('  skip: profiles'); }
+  try { await client.query('DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users CASCADE'); } catch { console.log('  skip: on_auth_user_created'); }
+  try { await client.query('DROP TRIGGER IF EXISTS on_auth_user_created_credits ON auth.users CASCADE'); } catch { console.log('  skip: on_auth_user_created_credits'); }
+  try { await client.query('DROP TRIGGER IF EXISTS profiles_updated_at ON public.profiles CASCADE'); } catch { console.log('  skip: profiles_updated_at'); }
+  try { await client.query('DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE'); } catch { console.log('  skip: handle_new_user'); }
+  try { await client.query('DROP FUNCTION IF EXISTS public.handle_new_user_credits() CASCADE'); } catch { console.log('  skip: handle_new_user_credits'); }
+  try { await client.query('DROP FUNCTION IF EXISTS public.generate_invite_code() CASCADE'); } catch { console.log('  skip: generate_invite_code'); }
+  try { await client.query('DROP FUNCTION IF EXISTS public.update_updated_at() CASCADE'); } catch { console.log('  skip: update_updated_at'); }
+  try { await client.query('DROP TABLE IF EXISTS public.payment_orders CASCADE'); } catch { console.log('  skip: payment_orders'); }
+  try { await client.query('DROP TABLE IF EXISTS public.credit_transactions CASCADE'); } catch { console.log('  skip: credit_transactions'); }
+  try { await client.query('DROP TABLE IF EXISTS public.pricing_plans CASCADE'); } catch { console.log('  skip: pricing_plans'); }
+  try { await client.query('DROP TABLE IF EXISTS public.profiles CASCADE'); } catch { console.log('  skip: profiles'); }
   console.log('✅ 清理完成');
 
   // 2. 建表

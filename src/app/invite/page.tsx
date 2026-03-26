@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -26,17 +26,7 @@ export default function InvitePage() {
     }>
   } | null>(null)
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/auth/login')
-      return
-    }
-    if (user) {
-      loadInviteInfo()
-    }
-  }, [user, loading, router])
-
-  async function loadInviteInfo() {
+  const loadInviteInfo = useCallback(async () => {
     const supabase = createClient()
     if (!user) return
 
@@ -64,7 +54,18 @@ export default function InvitePage() {
         })),
       })
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/auth/login')
+      return
+    }
+    if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      void loadInviteInfo()
+    }
+  }, [user, loading, router, loadInviteInfo])
 
   async function handleCopy() {
     const text = `我在使用「封面工厂」AI 生成多平台精美封面，新用户注册送 2 积分！使用我的邀请码 ${inviteCode} 注册，双方各得 2 积分~ 🎉`

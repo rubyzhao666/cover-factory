@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
-import { Download, RefreshCw } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Download } from 'lucide-react'
 import { getAspectRatio, getFontStyle } from '@/lib/constants'
 
 interface CoverPreviewProps {
@@ -24,55 +24,10 @@ export function CoverPreview({
   isGenerating,
 }: CoverPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [canvasReady, setCanvasReady] = useState(false)
+  const [canvasReady] = useState(true)
 
   const ratioConfig = platformId && ratioId ? getAspectRatio(platformId, ratioId) : null
   const fontConfig = getFontStyle(fontId)
-
-  // Canvas 渲染
-  const renderCanvas = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const width = ratioConfig?.width || 768
-    const height = ratioConfig?.height || 1024
-
-    canvas.width = width
-    canvas.height = height
-
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    // 清空画布
-    ctx.clearRect(0, 0, width, height)
-
-    // 绘制背景
-    if (generatedImage) {
-      // 已生成图片：绘制 AI 生成的背景
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, width, height)
-        // 叠加文字层
-        renderTextOverlay(ctx, width, height)
-        setCanvasReady(true)
-      }
-      img.onerror = () => {
-        // 图片加载失败，使用纯色背景
-        drawPlaceholder(ctx, width, height)
-        setCanvasReady(true)
-      }
-      img.src = generatedImage
-    } else {
-      // 未生成：绘制占位预览
-      drawPlaceholder(ctx, width, height)
-      setCanvasReady(true)
-    }
-  }, [generatedImage, ratioConfig, fontConfig, title, subtitle])
-
-  useEffect(() => {
-    renderCanvas()
-  }, [renderCanvas])
 
   // 绘制占位预览
   function drawPlaceholder(ctx: CanvasRenderingContext2D, width: number, height: number) {
@@ -193,6 +148,44 @@ export function CoverPreview({
     if (currentLine) lines.push(currentLine)
     return lines
   }
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const width = ratioConfig?.width || 768
+    const height = ratioConfig?.height || 1024
+
+    canvas.width = width
+    canvas.height = height
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // 清空画布
+    ctx.clearRect(0, 0, width, height)
+
+    // 绘制背景
+    if (generatedImage) {
+      // 已生成图片：绘制 AI 生成的背景
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, width, height)
+        renderTextOverlay(ctx, width, height)
+      }
+      img.onerror = () => {
+        // 图片加载失败，使用占位背景
+        drawPlaceholder(ctx, width, height)
+      }
+      img.src = generatedImage
+      return
+    }
+
+    // 未生成：绘制占位预览
+    drawPlaceholder(ctx, width, height)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generatedImage, ratioConfig, title, subtitle, fontConfig])
 
   // 下载图片
   const handleDownload = () => {

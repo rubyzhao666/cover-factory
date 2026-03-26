@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Check, Sparkles, Zap, Crown, Loader2 } from 'lucide-react'
+import { Check, Sparkles, Zap, Crown } from 'lucide-react'
 import type { PricingPlan } from '@/lib/types'
 
 const defaultPlans: PricingPlan[] = [
@@ -51,9 +51,6 @@ export default function PricingPage() {
   const router = useRouter()
   const { user } = useAuth()
   const [plans, setPlans] = useState<PricingPlan[]>(defaultPlans)
-  const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
-  const [showPayment, setShowPayment] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState<PricingPlan | null>(null)
 
   // 从 Supabase 加载套餐
   useEffect(() => {
@@ -80,8 +77,7 @@ export default function PricingPage() {
       router.push('/auth/login')
       return
     }
-    setShowPayment(true)
-    setSelectedPlan(plan)
+    router.push(`/pricing?plan=${plan.id}`)
   }
 
   const planIcons = [Zap, Sparkles, Crown]
@@ -178,21 +174,13 @@ export default function PricingPage() {
 
               <Button
                 onClick={() => handlePurchase(plan)}
-                disabled={loadingPlan === plan.id}
                 className={`w-full rounded-xl py-4 text-base font-semibold transition-all ${
                   plan.is_popular
                     ? 'bg-gradient-to-r from-orange-500 to-pink-500 shadow-lg shadow-orange-200 hover:shadow-xl'
                     : 'bg-gray-900 hover:bg-gray-800'
                 }`}
               >
-                {loadingPlan === plan.id ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    创建订单中...
-                  </>
-                ) : (
-                  '立即购买'
-                )}
+                立即购买
               </Button>
             </div>
           )

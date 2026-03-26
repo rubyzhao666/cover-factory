@@ -1,4 +1,4 @@
-import { getCoverStyle, getFontStyle } from './constants'
+import { getCoverStyle } from './constants'
 
 const SILICONFLOW_API_BASE = 'https://api.siliconflow.cn/v1'
 const SILICONFLOW_API_KEY = process.env.SILICONFLOW_API_KEY || ''
