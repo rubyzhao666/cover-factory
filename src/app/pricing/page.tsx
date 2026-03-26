@@ -1,9 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -48,8 +46,6 @@ function formatPrice(cents: number): string {
 }
 
 export default function PricingPage() {
-  const router = useRouter()
-  const { user } = useAuth()
   const [plans, setPlans] = useState<PricingPlan[]>(defaultPlans)
 
   // 从 Supabase 加载套餐
@@ -72,14 +68,6 @@ export default function PricingPage() {
     fetchPlans()
   }, [])
 
-  const handlePurchase = async (plan: PricingPlan) => {
-    if (!user) {
-      router.push('/auth/login')
-      return
-    }
-    router.push(`/pricing?plan=${plan.id}`)
-  }
-
   const planIcons = [Zap, Sparkles, Crown]
 
   return (
@@ -91,6 +79,9 @@ export default function PricingPage() {
         </h1>
         <p className="text-gray-500">
           每次生成消耗 1 积分，积分永久有效
+        </p>
+        <p className="mt-2 text-sm text-orange-600">
+          支付功能内测中，暂未开放购买
         </p>
       </div>
 
@@ -168,19 +159,19 @@ export default function PricingPage() {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Check className="h-4 w-4 text-orange-500" />
-                  <span>微信 / 支付宝支付</span>
+                  <span>支付功能内测中</span>
                 </div>
               </div>
 
               <Button
-                onClick={() => handlePurchase(plan)}
+                disabled
                 className={`w-full rounded-xl py-4 text-base font-semibold transition-all ${
                   plan.is_popular
                     ? 'bg-gradient-to-r from-orange-500 to-pink-500 shadow-lg shadow-orange-200 hover:shadow-xl'
                     : 'bg-gray-900 hover:bg-gray-800'
                 }`}
               >
-                立即购买
+                敬请期待
               </Button>
             </div>
           )

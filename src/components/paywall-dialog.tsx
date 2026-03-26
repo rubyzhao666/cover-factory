@@ -33,11 +33,15 @@ export function PaywallDialog({ open, onOpenChange, type = 'cover' }: PaywallDia
             💔 免费额度已用完
           </DialogTitle>
           <DialogDescription className="text-center">
-            今日免费{typeName}生成次数已用完，注册或充值即可继续使用
+            今日免费{typeName}生成次数已用完，注册或邀请好友即可继续使用
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
+          <div className="rounded-lg border border-orange-100 bg-orange-50 px-3 py-2 text-center text-xs text-orange-600">
+            支付功能内测中，暂未开放充值入口
+          </div>
+
           {/* 积分状态 */}
           <div className="rounded-xl bg-gray-50 p-4 text-center">
             <div className="flex items-center justify-center gap-2">
